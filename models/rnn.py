@@ -15,7 +15,7 @@ class RNNModel:
         model.add(Dropout(0.2))
 
         if run_type == 0:
-            model.add(Dense(1))
+            model.add(Dense(2))
             model.add(Activation('sigmoid'))
         else:
             if dataset == 0:

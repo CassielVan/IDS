@@ -1,7 +1,5 @@
 import pandas as pd
 import numpy as np
-import torch as th
-import torch.nn.functional as F
 
 
 def get_no_duplicates_data(data, duplicates_col):
@@ -56,7 +54,7 @@ def addr_change_index(data, col_list, need_dict):
     return data
 
 
-def balace_data(data, label):
+def balace_data(data, label, count):
     '''
     数据平衡处理
     :param data:
@@ -64,11 +62,11 @@ def balace_data(data, label):
     :return:
     '''
     category, num = np.unique(np.array(data[label]), return_counts=True)
-    balace_num = min(num)
+    balace_num = count
     result_data = pd.DataFrame()
     for cate in category:
         sub = data[data[label] == cate]
-        sub_sample = sub.sample(n=balace_num)
+        sub_sample = sub.sample(n=balace_num, replace=True)
         result_data = pd.concat([result_data, sub_sample])
     return result_data.reset_index().drop(['index'], axis=1)
 
@@ -90,7 +88,12 @@ def get_str_feature_to_num(data, feature_list):
 
         data[feature] = data[feature].map(value_dict, na_action=None)
         # all_dict[feature] = value_dict
-    return data
+    return pd.DataFrame(data)
+
+
+def convert_to_one_hot(Y, C):
+    Y = np.eye(C)[Y.reshape(-1)]
+    return Y
 
 
 def data_to_onehot(data, feature_list):
@@ -108,13 +111,20 @@ def data_to_onehot(data, feature_list):
             new_data = pd.concat([new_data, data.iloc[:, i]], axis=1)
         else:
             sub_list = []
-            sub_col = th.tensor(np.array(data[header[i]]))
-            sub_data = pd.DataFrame(F.one_hot(sub_col))
+            # sub_col = th.tensor(np.array(data[header[i]]))
+            sub_col = np.array(data[header[i]])
+            # print(sub_col)
+            # print(F.one_hot(sub_col))
+            # print("one_hot_type:",type(F.one_hot(sub_col)),F.one_hot(sub_col).shape)
+            # sub_data = pd.DataFrame(F.one_hot(sub_col))
+            values = np.unique(sub_col)
+            C = max(values) + 1
+            sub_data = pd.DataFrame(convert_to_one_hot(sub_col, C))
             for j in range(sub_data.shape[1]):
                 sub_list.append(header[i] + '_' + str(j))
             sub_data.columns = sub_list
             new_data = pd.concat([new_data, sub_data], axis=1)
-    return new_data
+    return pd.DataFrame(new_data)
 
 
 def get_feature_label(data, feature_list, label_list):
